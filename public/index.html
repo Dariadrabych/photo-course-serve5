@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <meta charset="UTF-8">
+  <title>Онлайн-курс з фотографії</title>
+</head>
+<body>
+  <h1>Мій прогрес</h1>
+
+  <div>
+    <h2>Увійти</h2>
+    <input id="email" placeholder="Email" />
+    <input id="password" placeholder="Пароль" type="password" />
+    <button onclick="login()">Увійти</button>
+  </div>
+
+  <div>
+    <h2>Зберегти урок</h2>
+    <input id="lessonId" placeholder="ID уроку" />
+    <button onclick="saveLesson()">Зберегти</button>
+  </div>
+
+  <div>
+    <h2>Пройдені уроки</h2>
+    <button onclick="loadLessons()">Завантажити</button>
+    <ul id="lessonList"></ul>
+  </div>
+
+  <script src="main.js"></script>
+</body>
+</html>
