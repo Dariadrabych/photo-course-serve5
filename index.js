@@ -7,24 +7,27 @@ const bcrypt = require('bcryptjs');
 const path = require('path');
 const serviceAccount = require('./firebase-adminsdk.json');
 
-// Ініціалізація Express
 const app = express();
-app.use(cors());
+
+// ✅ Дозволити лише Netlify-домен
+app.use(cors({
+  origin: 'https://fancy-bunny-36d353.netlify.app'  // ← сюди свій домен Netlify
+}));
 app.use(express.json());
 
-// Хостинг статичних файлів (index.html, main.js)
+// ✅ Хостинг статичних файлів
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Ініціалізація Firebase Admin SDK
+// ✅ Ініціалізація Firebase Admin SDK
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount)
 });
 const db = admin.firestore();
 
-// Тимчасове сховище користувачів (без бази даних)
+// Тимчасове сховище користувачів (в пам'яті)
 const users = [];
 
-// Middleware для перевірки JWT
+// Middleware для перевірки токена
 function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.sendStatus(403);
@@ -38,12 +41,12 @@ function verifyToken(req, res, next) {
   }
 }
 
-// Головна сторінка (перевірка сервера)
+// Стартова перевірка
 app.get('/', (req, res) => {
   res.send('Сервер працює!');
 });
 
-// Реєстрація користувача
+// Реєстрація
 app.post('/auth/register', async (req, res) => {
   const { email, password } = req.body;
   const hashed = await bcrypt.hash(password, 10);
@@ -51,7 +54,7 @@ app.post('/auth/register', async (req, res) => {
   res.status(201).send('Користувач зареєстрований');
 });
 
-// Вхід користувача
+// Вхід
 app.post('/auth/login', async (req, res) => {
   const { email, password } = req.body;
   const user = users.find(u => u.email === email);
@@ -62,12 +65,12 @@ app.post('/auth/login', async (req, res) => {
   res.json({ token });
 });
 
-// Отримання профілю користувача
+// Профіль
 app.get('/auth/profile', verifyToken, async (req, res) => {
   res.json({ email: req.user.email });
 });
 
-// Збереження пройденого уроку
+// Збереження уроку
 app.post('/lessons', verifyToken, async (req, res) => {
   const { lessonId, date } = req.body;
   try {
@@ -78,11 +81,12 @@ app.post('/lessons', verifyToken, async (req, res) => {
     });
     res.status(200).send('Урок збережено');
   } catch (err) {
+    console.error(err);
     res.status(500).send('Помилка сервера');
   }
 });
 
-// Отримання списку пройдених уроків
+// Отримання уроків
 app.get('/lessons', verifyToken, async (req, res) => {
   try {
     const snapshot = await db.collection('progress')
@@ -92,8 +96,15 @@ app.get('/lessons', verifyToken, async (req, res) => {
     const lessons = snapshot.docs.map(doc => doc.data());
     res.json(lessons);
   } catch (err) {
+    console.error(err);
     res.status(500).send('Помилка при отриманні даних');
   }
+});
+
+// Запуск сервера
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Сервер працює на порту ${PORT}`);
 });
 
 // Запуск сервера
