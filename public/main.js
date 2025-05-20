@@ -1,7 +1,7 @@
 let token = null;
+const BASE_URL = 'https://photo-course-serve5.onrender.com';
 
-const BASE_URL = 'https://photo-course-server.onrender.com';
-
+// login
 async function login() {
   const email = document.getElementById('email').value;
   const password = document.getElementById('password').value;
@@ -17,9 +17,9 @@ async function login() {
   alert('Успішно увійшли');
 }
 
+// save lesson
 async function saveLesson() {
   const lessonId = document.getElementById('lessonId').value;
-
   const res = await fetch(`${BASE_URL}/lessons`, {
     method: 'POST',
     headers: {
@@ -32,6 +32,7 @@ async function saveLesson() {
   alert(await res.text());
 }
 
+// load lessons
 async function loadLessons() {
   const res = await fetch(`${BASE_URL}/lessons`, {
     headers: {
@@ -48,3 +49,4 @@ async function loadLessons() {
     list.appendChild(li);
   });
 }
+
