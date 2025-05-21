@@ -10,14 +10,14 @@ const serviceAccount = require('./firebase-adminsdk.json');
 // Ініціалізація Express
 const app = express();
 
-// ✅ Дозволити запити з Netlify
+// Дозволити запити з Netlify
 app.use(cors({
   origin: 'https://fancy-bunny-36d353.netlify.app'
 }));
 
 app.use(express.json());
 
-// ✅ Статичні файли (index.html, main.js) — якщо треба
+// Статичні файли (необов'язково)
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Firebase Admin
@@ -26,27 +26,27 @@ admin.initializeApp({
 });
 const db = admin.firestore();
 
-// Тимчасове сховище користувачів (для тесту)
+// Тимчасове сховище користувачів
 const users = [];
 
-// ✅ Middleware: перевірка JWT
+// Middleware: перевірка JWT
 function verifyToken(req, res, next) {
   const authHeader = req.headers.authorization;
-  console.log('Authorization header:', authHeader); // Логування
+  console.log('Authorization header:', authHeader);
 
   if (!authHeader) {
-    console.warn('❌ Відсутній заголовок авторизації');
+    console.warn('Відсутній заголовок авторизації');
     return res.status(403).send('Token missing');
   }
 
   const token = authHeader.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('✅ JWT decoded:', decoded); // Логування
+    console.log('JWT decoded:', decoded);
     req.user = decoded;
     next();
   } catch (err) {
-    console.error('❌ JWT error:', err.message); // Логування
+    console.error('JWT error:', err.message);
     res.status(403).send('Invalid token');
   }
 }
@@ -56,7 +56,7 @@ app.get('/', (req, res) => {
   res.send('Сервер працює!');
 });
 
-// 👉 Реєстрація користувача
+// Реєстрація
 app.post('/auth/register', async (req, res) => {
   const { email, password } = req.body;
   const hashed = await bcrypt.hash(password, 10);
@@ -64,7 +64,7 @@ app.post('/auth/register', async (req, res) => {
   res.status(201).send('Користувач зареєстрований');
 });
 
-// 👉 Вхід користувача
+// Вхід
 app.post('/auth/login', async (req, res) => {
   const { email, password } = req.body;
   const user = users.find(u => u.email === email);
@@ -76,45 +76,45 @@ app.post('/auth/login', async (req, res) => {
   res.json({ token });
 });
 
-// 👉 Профіль користувача
+// Профіль
 app.get('/auth/profile', verifyToken, async (req, res) => {
   res.json({ email: req.user.email });
 });
 
-// 👉 Збереження уроку
+// Збереження уроку (з виправленою датою)
 app.post('/lessons', verifyToken, async (req, res) => {
   const { lessonId, date } = req.body;
   try {
     await db.collection('progress').add({
       email: req.user.email,
       lessonId,
-      date: new Date(date)
+      date: admin.firestore.Timestamp.fromDate(new Date(date))
     });
     res.status(200).send('Урок збережено');
   } catch (err) {
-    console.error('❌ Firestore error:', err.message);
+    console.error('Firestore error:', err.message);
     res.status(500).send('Помилка сервера');
   }
 });
 
-// 👉 Отримання списку уроків
+// Отримання уроків
 app.get('/lessons', verifyToken, async (req, res) => {
   try {
     const snapshot = await db.collection('progress')
       .where('email', '==', req.user.email)
       .orderBy('date', 'desc')
       .get();
+
     const lessons = snapshot.docs.map(doc => doc.data());
     res.json(lessons);
   } catch (err) {
-    console.error('❌ Firestore read error:', err.message);
+    console.error('Firestore read error:', err.message);
     res.status(500).send('Помилка при отриманні даних');
   }
 });
 
-// 🟢 Запуск сервера
+// Запуск сервера
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
-  console.log(`🚀 Сервер працює на порту ${PORT}`);
+  console.log(`Сервер працює на порту ${PORT}`);
 });
-
